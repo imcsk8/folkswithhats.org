@@ -10,7 +10,7 @@ fi
 
 
 echo "Adding repositories..."
-rpm --quiet --query folkswithhats-release || dnf -y --nogpgcheck install http://folkswithhats.org/repo/$(rpm -E %fedora)/noarch/folkswithhats-release-$(rpm -E %fedora)-0.fc$(rpm -E %fedora).noarch.rpm
+rpm --quiet --query folkswithhats-release || dnf -y --nogpgcheck install http://folkswithhats.org/repo/$(rpm -E %fedora)/RPMS/noarch/folkswithhats-release-1.0.0-1.fc$(rpm -E %fedora).noarch.rpm
 rpm --quiet --query rpmfusion-free-release || dnf -y --nogpgcheck install http://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
 rpm --quiet --query rpmfusion-nonfree-release || dnf -y --nogpgcheck install http://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
 
