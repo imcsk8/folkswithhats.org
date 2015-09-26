@@ -3,21 +3,62 @@
 # Script to install Fedy <http://folkswithhats.org/>.
 # Copyright (C) 2014  Satyajit sahoo
 
+function check_repo {
+   resp=$(curl -I $1 2>/dev/null| grep HTTP)
+   if ! [[ $resp =~ .*"HTTP/1.1 200".* ]]; then
+      return 0
+   fi
+   return 1
+}
+
+
 if [[ ! $(whoami) = "root" ]]; then
     echo "Please run the script as root."
     exit 1
 fi
 
+is_beta=$1
+
+version=$(rpm -E %fedora)
+fedy="http://folkswithhats.org/repo/$version/RPMS/noarch/folkswithhats-release-1.0.0-1.fc$version.noarch.rpm"
+
+# For fedy use the repo from the latest version available
+if [[ $(check_repo $fedy) != 1 ]];then
+   fedy_version=$(($version-1))
+   fedy="http://folkswithhats.org/repo/$version/RPMS/noarch/folkswithhats-release-1.0.0-1.fc$fedy_version.noarch.rpm"
+fi
+
+if [[ $is_beta == "-b" ]]; then
+   version="rawhide"
+fi
+
+rpmfusion_free="http://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$version.noarch.rpm"
+rpmfusion_nonfree="http://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$version.noarch.rpm"
 
 echo "Adding repositories..."
-rpm --quiet --query folkswithhats-release || dnf -y --nogpgcheck install http://folkswithhats.org/repo/$(rpm -E %fedora)/RPMS/noarch/folkswithhats-release-1.0.0-1.fc$(rpm -E %fedora).noarch.rpm
-rpm --quiet --query rpmfusion-free-release || dnf -y --nogpgcheck install http://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
-rpm --quiet --query rpmfusion-nonfree-release || dnf -y --nogpgcheck install http://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
 
+for repo in $fedy $rpmfusion_free $rpmfusion_nonfree
+do
+   echo "Adding: $repo"
+   check_repo $repo
+   if [[ $? != 1 ]];then
+      echo "The repository: $repo is not available, skipping"
+   else
+      echo "Adding repository: $repo"
+      dnf -y --nogpgcheck install $repo
+   fi
+done
+
+# Change rpmfusion to rawhide
+if [[ $version == "rawhide" ]]; then
+   sed -i 's/$releasever/rawhide/' /etc/yum.repos.d/rpmfusion-*.repo
+   sed -i "s/\$releasever/$fedy_version/" /etc/yum.repos.d/folkswithhats.repo
+fi
 
 echo "Installing fedy..."
 
 dnf -y --nogpgcheck install fedy
+
 
 # Please report bugs at <http://github.com/folkswithhats/fedy/issues>
 # End of the Script
